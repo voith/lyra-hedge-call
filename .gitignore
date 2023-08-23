@@ -1,0 +1,26 @@
+.DS_Store
+
+
+.idea
+.vscode
+
+**/.env
+
+.lyra/
+node_modules/
+
+#Hardhat files
+cache/
+out/
+artifacts/
+typechain/
+artifacts-ovm/
+typechain-types/
+coverage/
+coverage.json
+.env.private*
+yarn-error.log
+.vscode/
+
+tmp/
+
