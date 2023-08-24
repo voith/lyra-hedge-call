@@ -1,0 +1,6 @@
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
+synthetix/=node_modules/synthetix/
+@lyrafinance/=node_modules/@lyrafinance/
+openzeppelin-contracts-4.4.1/=node_modules/openzeppelin-contracts-4.4.1/
+openzeppelin-contracts-upgradeable-4.5.1/=node_modules/openzeppelin-contracts-upgradeable-4.5.1/

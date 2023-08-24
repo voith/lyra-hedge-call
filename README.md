@@ -5,4 +5,5 @@
 $ yarn
 $ curl -L https://foundry.paradigm.xyz | bash
 $ foundryup
+$ git submodule update --init --recursive
 ```

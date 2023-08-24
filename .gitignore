@@ -9,7 +9,9 @@
 .lyra/
 node_modules/
 
-#Hardhat files
+
+forge-cache/
+hardhat-cache/
 cache/
 out/
 artifacts/
