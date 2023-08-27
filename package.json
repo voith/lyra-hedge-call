@@ -2,5 +2,9 @@
   "dependencies": {
     "@lyrafinance/protocol": "https://github.com/lyra-finance/lyra-protocol.git#9c7ab802421c85c8329826f898d080d5bb60794d",
     "synthetix": "^2.93.1"
+  },
+  "devDependencies": {
+    "prettier": "2.3.0",
+    "prettier-plugin-solidity": "^1.1.3"
   }
 }
