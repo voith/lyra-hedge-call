@@ -11,7 +11,6 @@ import {IERC20} from "openzeppelin-contracts-4.4.1/token/ERC20/IERC20.sol";
 import {SynthetixPerpsAdapter} from "./SynthetixPerpsAdapter.sol";
 import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
 
-import "forge-std/console.sol";
 
 // TODO: all functions should be owner protected.
 contract LyraSNXHedger is LyraOptionsAdapter, SynthetixPerpsAdapter {

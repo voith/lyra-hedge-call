@@ -105,7 +105,6 @@ abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
         if (desiredCollateral < minMargin && getCurrentPerpsAmount() != 0) {
             desiredCollateral = minMargin;
         }
-
         perpsMarket.transferMargin(int(desiredCollateral) - int(currentCollateral));
     }
 
