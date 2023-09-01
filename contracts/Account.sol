@@ -3,12 +3,15 @@ pragma solidity ^0.8.13;
 
 import {Initializable} from "openzeppelin-contracts-4.4.1/proxy/utils/Initializable.sol";
 import {Ownable} from "openzeppelin-contracts-4.4.1/access/Ownable.sol";
+import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
 import "./LyraSNXHedgeStrategy.sol";
 
 /// @title Account Implementation with Hedging Capabilities
 /// @author Voith
 /// @notice account that allows users to buy on-chain derivatives and has hedging capabilities
 contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
+    /// @dev address of Lyras OptionToken
+    OptionToken optionToken;
     /// @notice thrown when ETH transferred from the account fails.
     error EthWithdrawalFailed();
     /// @notice thrown when the owner tries to withdraw optionToken.
@@ -19,6 +22,7 @@ contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
         address _owner,
         ILyraRegistry _lyraRegistry,
         OptionMarket _optionMarket,
+        OptionToken _optionToken,
         IPerpsV2MarketConsolidated _perpsMarket,
         IAddressResolver _addressResolver,
         IERC20 _quoteAsset,
@@ -34,6 +38,7 @@ contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
             _baseAsset,
             _snxPerpsParams
         );
+        optionToken = _optionToken;
         _transferOwnership(_owner);
     }
 
@@ -54,9 +59,8 @@ contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
 
     /// @notice withdraws ERC20/ERC721 tokens owned by the owner.
     /// @param token: address of the token
-    // TODO: don not allow transferring optionTokens
     function withdrawTokens(IERC20 token) external onlyOwner {
-//        if( address(token) == optionToken) revert OptionTokenWithdrawalFailed();
+        if (address(token) == address(optionToken)) revert OptionTokenWithdrawalFailed();
         token.transfer(msg.sender, token.balanceOf(address(this)));
     }
 

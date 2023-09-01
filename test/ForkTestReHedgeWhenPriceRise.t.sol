@@ -16,6 +16,7 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
             address(accountImplementation),
             lyraRegistry,
             ethOptionMarket,
+            ethOptionToken,
             ethPerpsMarket,
             addressResolver,
             usdc,

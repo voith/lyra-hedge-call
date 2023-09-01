@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {UpgradeableBeacon} from "openzeppelin-contracts-4.4.1/proxy/beacon/UpgradeableBeacon.sol";
 import {AccountProxy} from "./AccountProxy.sol";
 import "./Account.sol";
+import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
 
 /// @title Account Factory
 /// @author Voith
@@ -26,6 +27,8 @@ contract AccountFactory is UpgradeableBeacon {
     IERC20 baseAsset;
     /// @dev parameters for opening perps on snx.
     SynthetixPerpsAdapter.SNXPerpsParameters snxPerpsParams;
+    /// @dev address of Lyras OptionToken
+    OptionToken optionToken;
 
     /// @notice thrown when a user tries to create a new Account and if an Account already exists for teh user.
     error AccountAlreadyExistsError(address account);
@@ -34,6 +37,7 @@ contract AccountFactory is UpgradeableBeacon {
         address _implementation,
         ILyraRegistry _lyraRegistry,
         OptionMarket _optionMarket,
+        OptionToken _optionToken,
         IPerpsV2MarketConsolidated _perpsMarket,
         IAddressResolver _addressResolver,
         IERC20 _quoteAsset,
@@ -42,6 +46,7 @@ contract AccountFactory is UpgradeableBeacon {
     ) UpgradeableBeacon(_implementation) {
         lyraRegistry = _lyraRegistry;
         optionMarket = _optionMarket;
+        optionToken = _optionToken;
         perpsMarket = _perpsMarket;
         addressResolver = _addressResolver;
         quoteAsset = _quoteAsset;
@@ -63,6 +68,7 @@ contract AccountFactory is UpgradeableBeacon {
                         msg.sender,
                         lyraRegistry,
                         optionMarket,
+                        optionToken,
                         perpsMarket,
                         addressResolver,
                         quoteAsset,
