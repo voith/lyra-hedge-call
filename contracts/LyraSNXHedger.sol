@@ -11,15 +11,13 @@ import {IERC20} from "openzeppelin-contracts-4.4.1/token/ERC20/IERC20.sol";
 import {SynthetixPerpsAdapter} from "./SynthetixPerpsAdapter.sol";
 import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
 
-
-// TODO: all functions should be owner protected.
 contract LyraSNXHedger is LyraOptionsAdapter, SynthetixPerpsAdapter {
     IERC20 public quoteAsset;
     IERC20 public baseAsset;
     uint256[] private activeStrikeIds;
     mapping(uint256 => uint256) strikeAmounts;
 
-    constructor(
+    function initialize(
         ILyraRegistry _lyraRegistry,
         OptionMarket _optionMarket,
         IPerpsV2MarketConsolidated _perpsMarket,
@@ -27,26 +25,25 @@ contract LyraSNXHedger is LyraOptionsAdapter, SynthetixPerpsAdapter {
         IERC20 _quoteAsset,
         IERC20 _baseAsset,
         SynthetixPerpsAdapter.SNXPerpsV2PoolHedgerParameters memory _futuresPoolHedgerParams
-    )
-        LyraOptionsAdapter(_lyraRegistry, _optionMarket)
-        SynthetixPerpsAdapter(_perpsMarket, _addressResolver, _futuresPoolHedgerParams)
-    {
+    ) internal {
         quoteAsset = _quoteAsset;
         baseAsset = _baseAsset;
         quoteAsset.approve(address(_perpsMarket), type(uint256).max);
         baseAsset.approve(address(_perpsMarket), type(uint256).max);
         quoteAsset.approve(address(_optionMarket), type(uint256).max);
         baseAsset.approve(address(_optionMarket), type(uint256).max);
+        super.initialize(_perpsMarket, _addressResolver, _futuresPoolHedgerParams);
+        super.initialize(_lyraRegistry, _optionMarket);
     }
 
-    function buyHedgedCall(uint256 strikeId, uint256 amount) external {
+    function _buyHedgedCall(uint256 strikeId, uint256 amount) internal {
         _buyCall(strikeId, amount);
         _hedgeCallDelta(int(amount) * getDelta(strikeId) * int(-1));
         activeStrikeIds.push(strikeId);
         strikeAmounts[strikeId] += amount;
     }
 
-    function reHedgeDelta() external {
+    function _reHedgeDelta() internal {
         int256 expectedSizeDelta = _expectedSizeDelta();
         int256 currentSizeDelta = getCurrentPerpsAmount();
         if (expectedSizeDelta == currentSizeDelta) return;
@@ -73,11 +70,5 @@ contract LyraSNXHedger is LyraOptionsAdapter, SynthetixPerpsAdapter {
 
     function _getSpotPrice() internal view override returns (uint256) {
         return exchangeAdapter.getSpotPriceForMarket(address(optionMarket), BaseExchangeAdapter.PriceType.REFERENCE);
-    }
-
-    receive() external payable {}
-
-    function recoverFunds(IERC20 token, address recipient) external {
-        token.transfer(recipient, token.balanceOf(address(this)));
     }
 }

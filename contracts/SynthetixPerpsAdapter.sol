@@ -13,13 +13,10 @@ import {SignedDecimalMath} from "@lyrafinance/protocol/contracts/synthetix/Signe
 import {SafeCast} from "openzeppelin-contracts-4.4.1/utils/math/SafeCast.sol";
 import {Math} from "@lyrafinance/protocol/contracts/libraries/Math.sol";
 
-import {ReentrancyGuard} from "openzeppelin-contracts-4.4.1/security/ReentrancyGuard.sol";
-
-abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
+abstract contract SynthetixPerpsAdapter {
     using DecimalMath for uint256;
     using SignedDecimalMath for int256;
 
-    // TODO: remove unused vars
     struct SNXPerpsV2PoolHedgerParameters {
         uint targetLeverage;
         uint priceDeltaBuffer; // percentage buffer. toBN(1.1) -> 10% buffer.
@@ -35,11 +32,11 @@ abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
     error IncorrectShortSize(int256 size);
     error PendingOrderDeltaError(int256 pendingDelta);
 
-    constructor(
+    function initialize(
         IPerpsV2MarketConsolidated _perpsMarket,
         IAddressResolver _addressResolver,
         SNXPerpsV2PoolHedgerParameters memory _futuresPoolHedgerParams
-    ) {
+    ) internal {
         perpsMarket = _perpsMarket;
         addressResolver = _addressResolver;
         futuresPoolHedgerParams = _futuresPoolHedgerParams;
@@ -48,7 +45,7 @@ abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
     /**
      * @notice Updates the collateral held in the short to prevent liquidations and return excess collateral
      */
-    function updateCollateral() external payable nonReentrant {
+    function _updateCollateral() internal {
         // Dont update if there is a pending order
         _checkPendingOrder();
 
@@ -56,12 +53,12 @@ abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
 
         uint margin = getCurrentPositionMargin();
 
-        _updateCollateral(spotPrice, margin, getCurrentPerpsAmount());
+        _addCollateral(spotPrice, margin, getCurrentPerpsAmount());
     }
 
     function _submitOrderForPerps(uint256 spotPrice, int256 size) internal {
         uint256 margin = getCurrentPositionMargin();
-        _updateCollateral(spotPrice, margin, size);
+        _addCollateral(spotPrice, margin, size);
         uint256 desiredFillPrice = size > 0
             ? spotPrice.multiplyDecimal(futuresPoolHedgerParams.priceDeltaBuffer)
             : spotPrice.divideDecimal(futuresPoolHedgerParams.priceDeltaBuffer);
@@ -95,7 +92,7 @@ abstract contract SynthetixPerpsAdapter is ReentrancyGuard {
         return pos.size;
     }
 
-    function _updateCollateral(uint256 spotPrice, uint256 currentCollateral, int256 size) internal {
+    function _addCollateral(uint256 spotPrice, uint256 currentCollateral, int256 size) internal {
         uint256 desiredCollateral = Math.abs(size).multiplyDecimal(spotPrice).divideDecimal(
             futuresPoolHedgerParams.targetLeverage
         );

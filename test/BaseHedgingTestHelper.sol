@@ -13,11 +13,11 @@ import {IPerpsV2MarketSettings} from "@lyrafinance/protocol/contracts/interfaces
 import {ILyraRegistry} from "@lyrafinance/protocol/contracts/interfaces/ILyraRegistry.sol";
 import {IERC20} from "openzeppelin-contracts-4.4.1/token/ERC20/IERC20.sol";
 
-import {LyraSNXHedger} from "contracts/LyraSNXHedger.sol";
+import {Account as Account_} from "contracts/Account.sol";
+import {AccountFactory} from "contracts/AccountFactory.sol";
 import {SynthetixPerpsAdapter} from "contracts/SynthetixPerpsAdapter.sol";
 
 contract BaseHedgingTestHelper is Test {
-
     uint256 optimismFork;
     IERC20 usdc = IERC20(0x7F5c764cBc14f9669B88837ca1490cCa17c31607);
     IERC20 sUSD = IERC20(0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9);
@@ -30,35 +30,40 @@ contract BaseHedgingTestHelper is Test {
     ILyraRegistry lyraRegistry = ILyraRegistry(0x0FEd189bCD4A680e05B153dC7c3dC87004e162fb);
     OptionToken ethOptionToken = OptionToken(0xA48C5363698Cef655D374675fAf810137a1b2EC0);
 
-    LyraSNXHedger lyraHedger;
+    Account_ accountImplementation;
+    AccountFactory accountFactory;
+    Account_ userAccount;
 
     // testing address
-    address user = address(0x51);
+    address deployer = address(0x51);
+    address user = address(0x52);
     uint256 targetBlock;
 
     int256 oldDelta;
     uint256 strikeID;
     uint256 optionsAmount;
 
-
-    function fundAccount(address account) internal {
-        deal(account, 100 ether);
-        deal({token: address(usdc), to: account, give: 1000000e6});
-        exchangeUSDCforSUSD(account, 500000e6);
+    function fundAccount(address _account) internal {
+        deal(_account, 100 ether);
+        deal({token: address(usdc), to: _account, give: 1000000e6});
+        exchangeUSDCforSUSD(_account, 500000e6);
     }
 
-    function exchangeUSDCforSUSD(address account, uint256 amountIn) internal returns (uint256 amountOut) {
-        vm.startPrank(account);
+    function exchangeUSDCforSUSD(address _account, uint256 amountIn) internal returns (uint256 amountOut) {
+        vm.startPrank(_account);
         usdc.approve(address(curveSwap), amountIn);
         amountOut = curveSwap.exchange_with_best_rate(address(usdc), address(sUSD), amountIn, 0, user);
         vm.stopPrank();
     }
 
-    function executeOffchainDelayedOrder(uint256 _targetBlock, bytes memory _priceUpdateData) internal {
+    function executeOffchainDelayedOrder(
+        uint256 _targetBlock,
+        bytes memory _priceUpdateData,
+        address _account
+    ) internal {
         bytes[] memory priceUpdateData = new bytes[](1);
         priceUpdateData[0] = _priceUpdateData;
         vm.rollFork(_targetBlock);
-        ethPerpsMarket.executeOffchainDelayedOrder{value: 1}(address(lyraHedger), priceUpdateData);
+        ethPerpsMarket.executeOffchainDelayedOrder{value: 1}(_account, priceUpdateData);
     }
-
 }

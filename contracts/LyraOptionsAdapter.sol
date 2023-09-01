@@ -16,7 +16,7 @@ contract LyraOptionsAdapter {
     OptionMarket optionMarket;
     BaseExchangeAdapter public exchangeAdapter;
 
-    constructor(ILyraRegistry _lyraRegistry, OptionMarket _optionMarket) {
+    function initialize(ILyraRegistry _lyraRegistry, OptionMarket _optionMarket) internal {
         optionMarket = _optionMarket;
         lyraRegistry = _lyraRegistry;
         exchangeAdapter = BaseExchangeAdapter(lyraRegistry.getGlobalAddress(SNX_ADAPTER));
