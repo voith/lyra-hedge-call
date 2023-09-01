@@ -13,55 +13,78 @@ import {SignedDecimalMath} from "@lyrafinance/protocol/contracts/synthetix/Signe
 import {SafeCast} from "openzeppelin-contracts-4.4.1/utils/math/SafeCast.sol";
 import {Math} from "@lyrafinance/protocol/contracts/libraries/Math.sol";
 
+/// @title Synthetix Perpetual Futures Adapter
+/// @author Voith
+/// @notice contracts that helps with buying perps on synthetix and helps maintain healthy margins for positions
 abstract contract SynthetixPerpsAdapter {
     using DecimalMath for uint256;
     using SignedDecimalMath for int256;
 
-    struct SNXPerpsV2PoolHedgerParameters {
-        uint targetLeverage;
-        uint priceDeltaBuffer; // percentage buffer. toBN(1.1) -> 10% buffer.
+    struct SNXPerpsParameters {
+        // leverage for positions opened. Choose a safe vale like 1.1 to not get liquidated.
+        uint256 targetLeverage;
+        // percentage buffer.toBN(1.1) -> 10% buffer.
+        uint256 priceDeltaBuffer;
     }
 
     bytes32 constant FUTURES_SETTINGS_CONTRACT = bytes32("PerpsV2MarketSettings");
 
+    /// @notice address of Synthetix AddressResolver.
     IAddressResolver public addressResolver;
+    /// @notice address of Synthetix PerpsV2 Market.
     IPerpsV2MarketConsolidated public perpsMarket;
-    SNXPerpsV2PoolHedgerParameters public futuresPoolHedgerParams;
+    /// @notice parameters for opening perps on snx.
+    SNXPerpsParameters public snxPerpsParams;
 
+    /// @notice thrown when perpsMarket returns an invalid result.
     error PerpMarketReturnedInvalid();
-    error IncorrectShortSize(int256 size);
+    /// @notice thrown when a new order is placed without executing or deleting the old order.
     error PendingOrderDeltaError(int256 pendingDelta);
 
+    /// @dev Initialize the contract.
     function initialize(
         IPerpsV2MarketConsolidated _perpsMarket,
         IAddressResolver _addressResolver,
-        SNXPerpsV2PoolHedgerParameters memory _futuresPoolHedgerParams
+        SNXPerpsParameters memory _snxPerpsParams
     ) internal {
         perpsMarket = _perpsMarket;
         addressResolver = _addressResolver;
-        futuresPoolHedgerParams = _futuresPoolHedgerParams;
+        snxPerpsParams = _snxPerpsParams;
     }
 
-    /**
-     * @notice Updates the collateral held in the short to prevent liquidations and return excess collateral
-     */
-    function _updateCollateral() internal {
-        // Dont update if there is a pending order
-        _checkPendingOrder();
-
-        uint spotPrice = _getSpotPrice();
-
-        uint margin = getCurrentPositionMargin();
-
-        _addCollateral(spotPrice, margin, getCurrentPerpsAmount());
+    /// @notice returns remaining margin which is inclusive of pnl and margin
+    function getCurrentPositionMargin() public view returns (uint256) {
+        (uint margin, bool invalid) = perpsMarket.remainingMargin(address(this));
+        if (invalid) revert PerpMarketReturnedInvalid();
+        return margin;
     }
 
+    /// @notice returns the current size of the open positions on synthetix
+    function getCurrentPerpsAmount() public view returns (int256) {
+        IPerpsV2MarketConsolidated.Position memory pos = perpsMarket.positions(address(this));
+        return pos.size;
+    }
+
+    /// @notice calculates current leverage for the open position on synthetix
+    function currentLeverage() external view returns (int leverage) {
+        uint256 price = _getSpotPrice();
+        IPerpsV2MarketConsolidated.Position memory position = perpsMarket.positions(address(this));
+        (uint remainingMargin_, ) = perpsMarket.remainingMargin(address(this));
+        if (remainingMargin_ == 0) {
+            return int(0);
+        }
+        return int(position.size).multiplyDecimal(int(price)).divideDecimal(int(remainingMargin_));
+    }
+
+    /// @dev submits a delayed order on snx for opening perps of given size.
+    /// It also adjust the collateral needed for opening the position.
     function _submitOrderForPerps(uint256 spotPrice, int256 size) internal {
-        uint256 margin = getCurrentPositionMargin();
-        _addCollateral(spotPrice, margin, size);
+        // Dont submit if there is a pending order
+        _checkPendingOrder();
+        _addCollateral(spotPrice, size);
         uint256 desiredFillPrice = size > 0
-            ? spotPrice.multiplyDecimal(futuresPoolHedgerParams.priceDeltaBuffer)
-            : spotPrice.divideDecimal(futuresPoolHedgerParams.priceDeltaBuffer);
+            ? spotPrice.multiplyDecimal(snxPerpsParams.priceDeltaBuffer)
+            : spotPrice.divideDecimal(snxPerpsParams.priceDeltaBuffer);
         perpsMarket.submitOffchainDelayedOrder(size, desiredFillPrice);
     }
 
@@ -74,37 +97,27 @@ abstract contract SynthetixPerpsAdapter {
         }
     }
 
+    /// @dev fetches the spot price for the market.
+    /// All rates are denominated in terms of quoteAsset.
     function _getSpotPrice() internal view virtual returns (uint256);
 
-    /// @notice remaining margin is inclusive of pnl and margin
-    function getCurrentPositionMargin() public view returns (uint256) {
-        (uint margin, bool invalid) = perpsMarket.remainingMargin(address(this));
-
-        if (invalid) {
-            revert PerpMarketReturnedInvalid();
-        }
-
-        return margin;
-    }
-
-    function getCurrentPerpsAmount() public view returns (int256) {
-        IPerpsV2MarketConsolidated.Position memory pos = perpsMarket.positions(address(this));
-        return pos.size;
-    }
-
-    function _addCollateral(uint256 spotPrice, uint256 currentCollateral, int256 size) internal {
-        uint256 desiredCollateral = Math.abs(size).multiplyDecimal(spotPrice).divideDecimal(
-            futuresPoolHedgerParams.targetLeverage
+    /// @dev adds margin to the market for opening perps
+    function _addCollateral(uint256 spotPrice, int256 size) internal {
+        int256 newSize = size + getCurrentPerpsAmount();
+        uint256 desiredCollateral = Math.abs(newSize).multiplyDecimal(spotPrice).divideDecimal(
+            snxPerpsParams.targetLeverage
         );
-        uint minMargin = _getFuturesMarketSettings().minInitialMargin();
+        uint256 currentCollateral = getCurrentPositionMargin();
+        uint256 minMargin = _getFuturesMarketSettings().minInitialMargin();
         // minimum margin requirement
-
         if (desiredCollateral < minMargin && getCurrentPerpsAmount() != 0) {
             desiredCollateral = minMargin;
         }
-        perpsMarket.transferMargin(int(desiredCollateral) - int(currentCollateral));
+
+        perpsMarket.transferMargin(int256(desiredCollateral) - int256(currentCollateral));
     }
 
+    // @dev returns the futuresMarketSettings
     function _getFuturesMarketSettings() internal view returns (IPerpsV2MarketSettings) {
         return IPerpsV2MarketSettings(addressResolver.getAddress(FUTURES_SETTINGS_CONTRACT));
     }

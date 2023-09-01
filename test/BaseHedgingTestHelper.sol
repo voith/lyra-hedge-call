@@ -19,6 +19,7 @@ import {SynthetixPerpsAdapter} from "contracts/SynthetixPerpsAdapter.sol";
 
 contract BaseHedgingTestHelper is Test {
     uint256 optimismFork;
+    uint256 targetLeverage = 1100000000000000000;
     IERC20 usdc = IERC20(0x7F5c764cBc14f9669B88837ca1490cCa17c31607);
     IERC20 sUSD = IERC20(0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9);
     bytes32 constant FUTURES_SETTINGS_CONTRACT = bytes32("PerpsV2MarketSettings");

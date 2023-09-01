@@ -20,7 +20,7 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
             addressResolver,
             usdc,
             sUSD,
-            SynthetixPerpsAdapter.SNXPerpsV2PoolHedgerParameters({
+            SynthetixPerpsAdapter.SNXPerpsParameters({
                 targetLeverage: 1100000000000000000,
                 priceDeltaBuffer: 1050000000000000000
             })
@@ -59,9 +59,17 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
         // fast forward chain and execute
         executeOffchainDelayedOrder(targetBlock, priceUpdateData, address(userAccount));
         assertEq(hedgedDelta, userAccount.getCurrentPerpsAmount());
+        // check that the leverage for perps on snx is in the ballpark range.
+        // It might not be exact because of the time difference between submitting and executing order
+        uint256 currentLeverage = uint256(userAccount.currentLeverage() * int(-1));
+        assertApproxEqAbs(targetLeverage / 10 ** 16, currentLeverage / 10 ** 16, 2);
     }
 
     function testReHedgewhenPriceRise() external {
+        // foundry has some weird bugs for the optimism fork.
+        // if the sUSD balance is not checked here than forge resets it to 0.
+        assertTrue(sUSD.balanceOf(address(userAccount)) > 0);
+
         int oldHedgedDelta = userAccount.getCurrentPerpsAmount();
         uint256 newTargetBlock = 106028900; // Jun-25-2023 01:29:37 AM +UTC
 
@@ -82,5 +90,9 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
         assertTrue(Math.abs(oldHedgedDelta) < Math.abs(newHedgedDelta));
         // check that the new perps amount is equal to
         assertEq(newHedgedDelta, userAccount.getCurrentPerpsAmount());
+        // check that the leverage for perps on snx is in the ballpark range.
+        // It might not be exact because of the time difference between submitting and executing order
+        uint256 currentLeverage = uint256(userAccount.currentLeverage() * int(-1));
+        assertApproxEqAbs(targetLeverage / 10 ** 16, currentLeverage / 10 ** 16, 2);
     }
 }
