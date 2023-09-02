@@ -67,4 +67,22 @@ contract BaseHedgingTestHelper is Test {
         vm.rollFork(_targetBlock);
         ethPerpsMarket.executeOffchainDelayedOrder{value: 1}(_account, priceUpdateData);
     }
+
+     function buyCallOption() internal {
+        vm.startPrank(address(userAccount));
+        usdc.approve(address(ethOptionMarket), type(uint).max);
+        OptionMarket.TradeInputParameters memory params = OptionMarket.TradeInputParameters({
+            strikeId: strikeID,
+            positionId: 0,
+            optionType: OptionMarket.OptionType.LONG_CALL,
+            amount: optionsAmount,
+            setCollateralTo: 0,
+            iterations: 1,
+            minTotalCost: 0,
+            maxTotalCost: type(uint256).max,
+            referrer: address(0)
+        });
+        ethOptionMarket.openPosition(params);
+        vm.stopPrank();
+    }
 }

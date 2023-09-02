@@ -3,15 +3,12 @@ pragma solidity ^0.8.13;
 
 import {Initializable} from "openzeppelin-contracts-4.4.1/proxy/utils/Initializable.sol";
 import {Ownable} from "openzeppelin-contracts-4.4.1/access/Ownable.sol";
-import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
 import "./LyraSNXHedgeStrategy.sol";
 
 /// @title Account Implementation with Hedging Capabilities
 /// @author Voith
 /// @notice account that allows users to buy on-chain derivatives and has hedging capabilities
 contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
-    /// @dev address of Lyras OptionToken
-    OptionToken optionToken;
     /// @notice thrown when ETH transferred from the account fails.
     error EthWithdrawalFailed();
     /// @notice thrown when the owner tries to withdraw optionToken.
@@ -32,13 +29,13 @@ contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
         super.initialize(
             _lyraRegistry,
             _optionMarket,
+            _optionToken,
             _perpsMarket,
             _addressResolver,
             _quoteAsset,
             _baseAsset,
             _snxPerpsParams
         );
-        optionToken = _optionToken;
         _transferOwnership(_owner);
     }
 

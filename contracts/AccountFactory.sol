@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {UpgradeableBeacon} from "openzeppelin-contracts-4.4.1/proxy/beacon/UpgradeableBeacon.sol";
 import {AccountProxy} from "./AccountProxy.sol";
 import "./Account.sol";
-import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
 
 /// @title Account Factory
 /// @author Voith

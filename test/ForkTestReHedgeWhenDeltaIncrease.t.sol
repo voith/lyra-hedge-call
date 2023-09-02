@@ -6,7 +6,9 @@ import "forge-std/console.sol";
 import {Math} from "@lyrafinance/protocol/contracts/libraries/Math.sol";
 import "./BaseHedgingTestHelper.sol";
 
-contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
+contract ForkTestReHedgeWhenDeltaIncrease is BaseHedgingTestHelper {
+    using stdStorage for StdStorage;
+
     function setUp() external {
         targetBlock = 105591748; // Jun-14-2023 10:37:53 PM +UTC
         vm.rollFork(targetBlock - 5);
@@ -34,14 +36,14 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
         vm.makePersistent(address(accountImplementation), address(accountFactory), address(userAccount));
         vm.makePersistent(user);
 
-        strikeID = 64;
-        optionsAmount = 2;
+        strikeID = 66;
+        optionsAmount = 2e18;
         setupBuyHedgeCall();
     }
 
     function setupBuyHedgeCall() internal {
         vm.startPrank(user);
-        usdc.transfer(address(userAccount), 10000e6);
+        usdc.transfer(address(userAccount), 50000e6);
         sUSD.transfer(address(userAccount), 50000e18);
         userAccount.buyHedgedCall(strikeID, optionsAmount);
         vm.stopPrank();
@@ -52,7 +54,7 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
         assertEq(uint(optionTokens[0].optionType), uint(OptionMarket.OptionType.LONG_CALL));
 
         int256 delta = userAccount.getDelta(strikeID);
-        int256 hedgedDelta = int(optionsAmount) * delta * int(-1);
+        int256 hedgedDelta = (int(optionsAmount) * delta * int(-1)) / 1e18;
         oldDelta = delta;
 
         bytes
@@ -66,22 +68,28 @@ contract ForkTestReHedgeWhenPriceDrop is BaseHedgingTestHelper {
         assertApproxEqAbs(targetLeverage / 10 ** 16, currentLeverage / 10 ** 16, 2);
     }
 
-    function testReHedgewhenPriceRise() external {
+    function testReHedgewhenDeltaIncrease() external {
         // foundry has some weird bugs for the optimism fork.
         // if the sUSD balance is not checked here than forge resets it to 0.
         assertTrue(sUSD.balanceOf(address(userAccount)) > 0);
+        assertTrue(usdc.balanceOf(address(userAccount)) > 0);
 
         int oldHedgedDelta = userAccount.getCurrentPerpsAmount();
         uint256 newTargetBlock = 106028900; // Jun-25-2023 01:29:37 AM +UTC
 
-        vm.rollFork(newTargetBlock - 5);
+        vm.rollFork(newTargetBlock - 10);
+        // After rolling the chain, the position opened by userAccount gets overwritten.
+        // This is because the positionID opened by the test was actually opened and owned by another address onchain
+        // Fake this by buying an option with same strikeID and Size to test reHedging logic.
+        buyCallOption();
+
         vm.startPrank(user);
         userAccount.reHedgeDelta();
 
         int256 newDelta = userAccount.getDelta(strikeID);
         assertTrue(uint256(oldDelta) < uint256(newDelta));
 
-        int256 newHedgedDelta = int(optionsAmount) * newDelta * int(-1);
+        int256 newHedgedDelta = (int(optionsAmount) * newDelta * int(-1)) / 1e18;
         bytes
             memory priceUpdateData = hex"01000000030d001cdf5d537ea78bb524d98f97f4db54905aa24e97fdc76b4663195eb388d83adf12894873979ca1dd9b7d36079a1c37b824aadeacfdb315e6e75f4d918b0ed81b0002a3f2bf1c2336b6fc638fdee5694d11f492b9d944f098f0c372afc31c7c3fdaf91cf252d563e2e16b4d40debf5ec6e9ae3433b57c7db8ddb19bcdd7009a1c4dd9010418be33fda386ec39f154c43f28b454c412b697a0c17d367385007e51f6aef5e15be58399ab0a92a3fa49ddda4f69d12fba7f5cb4f364a35e04fc0cdd6f05c55d00069737444bc7932e622bb5832240c489ab41dd51bcff664c83f2be6eac16c8b4bb23f25c0d66d481ea3eeec02692c509f1a1d7dd0cdd38e6e1647ab636590330a90008da860fa54860e5ac91ef5de1d39fb1d8cc2f19afe403f63f1381ae95dd2dd9124c0acb4d527a84fccc0ac84dcada2c7f2650e028c8c1ebbb4ab4d2aee500c9f4010a4ebd28872a5763d921e7a220c9297dea13b2def69041950f11df5ae0d417e6e35d67ee8a6154b24c50fbe0f5f41b99ad854d043cadeebaf4cc7ee5fe87111d5f010b58f7884117e801ec517f573c01d57d1edb666a86a1161dcff9295b601c400a96443b7bb1b21137382580b9752b3f8ece5ebe55cce0113ff27a7902c33ee75cd3000c39f9d64e3bc373dab5c0ee19731104638af217ca6d5a91cf743668e878b8e8b169ac58a1fca211499c526ec1295dc13c671548a5908907db4207ddb0d2594678010ddd2c3e102a9f05a691116ef3fd5c921d4c26e1a0e851a34072c4f87e925e9a0b2d290037a1818a3894ebcc3d0c16565537ba02021eb59aec2b0d194d20385fae010f179f36bfdbef04d6d1ad13770e48635b1efc6ef9a00a0bcd88d615510eefc2401176b509425082758734b105c152b71b88ddd8e321530db7e6d0a1defd8ac8f0011004d58ce8dfb1273a157a26707c2c100ec4d0824ed9bc38b3ce6fb1536ed1988e1524839bd39c24c59b2398c946318f60fff956f9b692bf9f269bec1cdd311c4f00119a82f4683103080b9a7040f33c17dedae453a5fb1ced27ef218a995aadb1f2fe7783f02dac7686dc56f8d1f940468012a61fde972cd2c249c2b87fd974e0ca030112055f88e216542dd4b63c71659eea1695d1c41aecd7dc4a69c8351df977ead9af62e62af978214556f91d07bcf0edd320ca7970b54fda6269312028a9fe4c2e4b016497987c00000000001af8cd23c2ab91237730770bbea08d61005cdda0984348f3f6eecb559638c0bba0000000001d63f3da0150325748000300010001020005009d04028fba493a357ecde648d51375a445ce1cb9681da1ea11e562b53522a5d3877f981f906d7cfe93f618804f1de89e0199ead306edc022d3230b3e8305f391b00000002bb77e1e01000000000b18eb77fffffff80000002b9de957c80000000009f060cf010000000c0000000e000000006497987c000000006497987c000000006497987b0000002bb77e1e01000000000b18eb77000000006497987be6c020c1a15366b779a8c870e065023657c88c82b82d58a9fe856896a4034b0415ecddd26d49e1a8f1de9376ebebc03916ede873447c1255d2d5891b92ce57170000002d8660820000000000096748a6fffffff80000002d6976d5e0000000000a602ace010000000700000008000000006497987c000000006497987c000000006497987b0000002d86b46e600000000009bb3506000000006497987bc67940be40e0cc7ffaa1acb08ee3fab30955a197da1ec297ab133d4d43d86ee6ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace0000002bc5fcf02c0000000005e0e35afffffff80000002ba9780d7800000000053a9337010000001d0000001f000000006497987c000000006497987c000000006497987b0000002bc6164a940000000005fa3dc2000000006497987b8d7c0971128e8a4764e757dedb32243ed799571706af3a68ab6a75479ea524ff846ae1bdb6300b817cee5fdee2a6da192775030db5615b94a465f53bd40850b50000002bbadadfa0000000001493a88afffffff80000002ba3dcdb500000000010ac59da010000000900000009000000006497987c000000006497987c000000006497987b0000002bbadadfa0000000001493a88a000000006497987a543b71a4c292744d3fcf814a2ccda6f7c00f283d457f83aa73c41e9defae034ba0255134973f4fdf2f8f7808354274a3b1ebc6ee438be898d045e8b56ba1fe1300000000000000000000000000000000fffffff800000000000000000000000000000000000000000000000006000000006497987c000000006496162b0000000000000000000000000000000000000000000000000000000000000000";
         // fast forward chain and execute

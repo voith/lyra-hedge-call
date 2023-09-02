@@ -7,6 +7,9 @@ import {IPerpsV2MarketConsolidated} from "@lyrafinance/protocol/contracts/interf
 import {IAddressResolver} from "@lyrafinance/protocol/contracts/interfaces/IAddressResolver.sol";
 import {BaseExchangeAdapter} from "@lyrafinance/protocol/contracts/BaseExchangeAdapter.sol";
 import {IERC20} from "openzeppelin-contracts-4.4.1/token/ERC20/IERC20.sol";
+import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
+import {SignedDecimalMath} from "@lyrafinance/protocol/contracts/synthetix/SignedDecimalMath.sol";
+import "forge-std/console.sol";
 
 import {SynthetixPerpsAdapter} from "./SynthetixPerpsAdapter.sol";
 import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
@@ -15,19 +18,19 @@ import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
 /// @author Voith
 /// @notice buys options on lyra and hedges the call delta by shorting perps on snx.
 contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
+    using SignedDecimalMath for int256;
     /// @notice address of QuoteAsset(USDC normally).
     IERC20 public quoteAsset;
     // @notice address of BaseAsset(sUSD normally).
     IERC20 public baseAsset;
-    /// @dev array to keep track of strikes for which positons are opened and hedged.
-    uint256[] private activeStrikeIds;
-    /// @dev mapping of StrikeID to Size of the option opened
-    mapping(uint256 => uint256) strikeAmounts;
+    /// @notice address of Lyras OptionToken
+    OptionToken public optionToken;
 
     /// @dev Initialize the contract.
     function initialize(
         ILyraRegistry _lyraRegistry,
         OptionMarket _optionMarket,
+        OptionToken _optionToken,
         IPerpsV2MarketConsolidated _perpsMarket,
         IAddressResolver _addressResolver,
         IERC20 _quoteAsset,
@@ -36,6 +39,7 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
     ) internal {
         quoteAsset = _quoteAsset;
         baseAsset = _baseAsset;
+        optionToken = _optionToken;
         quoteAsset.approve(address(_perpsMarket), type(uint256).max);
         baseAsset.approve(address(_perpsMarket), type(uint256).max);
         quoteAsset.approve(address(_optionMarket), type(uint256).max);
@@ -47,9 +51,7 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
     /// @dev buys a call for a given strikeId and amount and the hedges the delta of the option by selling perps on snx.
     function _buyHedgedCall(uint256 strikeId, uint256 amount) internal {
         _buyCall(strikeId, amount);
-        _hedgeCallDelta(int(amount) * getDelta(strikeId) * int(-1));
-        activeStrikeIds.push(strikeId);
-        strikeAmounts[strikeId] += amount;
+        _reHedgeDelta();
     }
 
     /// @dev re-calculates the net delta of all the open positions and re-balances the hedged delta
@@ -71,16 +73,13 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
         _submitOrderForPerps(spotPrice, sizeDelta);
     }
 
-    /// @dev calculates the net call for all the open option positions
-    /// This is an ugly solution to calculate net delta by looping over all the active Strikes.
-    /// However, the number strikes open at given point of time are a small number and hence this
-    /// function should not run out of gas.
+    /// @dev calculates the net call delta for all the open option positions
     function _expectedSizeDelta() internal view returns (int256) {
         int256 _totalSizeDelta = 0;
-        uint256 activeStrikeLength = activeStrikeIds.length;
-        for (uint256 i = 0; i < activeStrikeLength; i++) {
-            uint256 _strikeId = activeStrikeIds[i];
-            _totalSizeDelta += (getDelta(_strikeId) * int(strikeAmounts[_strikeId]));
+        OptionToken.OptionPosition[] memory optionTokens = optionToken.getOwnerPositions(address(this));
+        uint256 numberOfOptions = optionTokens.length;
+        for (uint i = 0; i < numberOfOptions; i++) {
+            _totalSizeDelta = getDelta(optionTokens[i].strikeId).multiplyDecimal(int(optionTokens[i].amount));
         }
         return _totalSizeDelta * int256(-1);
     }

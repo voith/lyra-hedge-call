@@ -38,7 +38,7 @@ contract LyraOptionsAdapter {
     }
 
     /// @dev buys a call option from lyra for a given strikeId and amount.
-    function _buyCall(uint strikeId, uint amount) internal {
+    function _buyCall(uint strikeId, uint amount) internal returns (OptionMarket.Result memory result) {
         OptionMarket.TradeInputParameters memory params = OptionMarket.TradeInputParameters({
             strikeId: strikeId,
             positionId: 0,
@@ -50,7 +50,7 @@ contract LyraOptionsAdapter {
             maxTotalCost: type(uint256).max,
             referrer: address(0)
         });
-        optionMarket.openPosition(params);
+        result = optionMarket.openPosition(params);
     }
 
     /// @dev format all strike related params before input into BlackScholes
