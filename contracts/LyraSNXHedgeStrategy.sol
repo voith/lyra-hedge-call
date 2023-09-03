@@ -59,17 +59,11 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
         int256 expectedSizeDelta = _expectedSizeDelta();
         int256 currentSizeDelta = getCurrentPerpsAmount();
         if (expectedSizeDelta == currentSizeDelta) return;
-        _hedgeCallDelta(expectedSizeDelta - currentSizeDelta);
-    }
-
-    /// @dev submits a delayed order of given sizeDelta on snx.
-    /// It also adjust the margin needed for opening the position.
-    function _hedgeCallDelta(int256 sizeDelta) internal {
         uint256 spotPrice = exchangeAdapter.getSpotPriceForMarket(
             address(optionMarket),
             BaseExchangeAdapter.PriceType.REFERENCE
         );
-        _submitOrderForPerps(spotPrice, sizeDelta);
+        _submitOrderForPerps(spotPrice, expectedSizeDelta - currentSizeDelta);
     }
 
     /// @dev calculates the net call delta for all the open option positions

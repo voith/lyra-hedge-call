@@ -1,5 +1,5 @@
 # LyraSNXHedgeStrategy
-[Git Source](https://github.com/voith/lyra-hedge-call/blob/6d8d03993f954009976ed0c983a934150d408004/contracts/LyraSNXHedgeStrategy.sol)
+[Git Source](https://github.com/voith/lyra-hedge-call/blob/cca9b2818d585390a65c6eb856ad369c2b512f4f/contracts/LyraSNXHedgeStrategy.sol)
 
 **Inherits:**
 [LyraOptionsAdapter](/contracts/LyraOptionsAdapter.sol/contract.LyraOptionsAdapter.md), [SynthetixPerpsAdapter](/contracts/SynthetixPerpsAdapter.sol/abstract.SynthetixPerpsAdapter.md)
@@ -72,16 +72,6 @@ by buying/selling perps on snx.*
 
 ```solidity
 function _reHedgeDelta() internal;
-```
-
-### _hedgeCallDelta
-
-*submits a delayed order of given sizeDelta on snx.
-It also adjust the margin needed for opening the position.*
-
-
-```solidity
-function _hedgeCallDelta(int256 sizeDelta) internal;
 ```
 
 ### _expectedSizeDelta
