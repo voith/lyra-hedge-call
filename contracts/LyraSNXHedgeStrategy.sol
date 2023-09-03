@@ -9,7 +9,6 @@ import {BaseExchangeAdapter} from "@lyrafinance/protocol/contracts/BaseExchangeA
 import {IERC20} from "openzeppelin-contracts-4.4.1/token/ERC20/IERC20.sol";
 import {OptionToken} from "@lyrafinance/protocol/contracts/OptionToken.sol";
 import {SignedDecimalMath} from "@lyrafinance/protocol/contracts/synthetix/SignedDecimalMath.sol";
-import "forge-std/console.sol";
 
 import {SynthetixPerpsAdapter} from "./SynthetixPerpsAdapter.sol";
 import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
@@ -81,7 +80,7 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
         OptionToken.OptionPosition[] memory optionTokens = optionToken.getOwnerPositions(address(this));
         uint256 numberOfOptions = optionTokens.length;
         for (uint i = 0; i < numberOfOptions; i++) {
-            _totalSizeDelta = getDelta(optionTokens[i].strikeId).multiplyDecimal(int(optionTokens[i].amount));
+            _totalSizeDelta += getDelta(optionTokens[i].strikeId).multiplyDecimal(int(optionTokens[i].amount));
         }
         return _totalSizeDelta * int256(-1);
     }

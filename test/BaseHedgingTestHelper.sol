@@ -38,11 +38,9 @@ contract BaseHedgingTestHelper is Test {
     // testing address
     address deployer = address(0x51);
     address user = address(0x52);
-    uint256 targetBlock;
+    uint256 startBlock;
 
     int256 oldDelta;
-    uint256 strikeID;
-    uint256 optionsAmount;
 
     function fundAccount(address _account) internal {
         deal(_account, 100 ether);
@@ -68,14 +66,14 @@ contract BaseHedgingTestHelper is Test {
         ethPerpsMarket.executeOffchainDelayedOrder{value: 1}(_account, priceUpdateData);
     }
 
-     function buyCallOption() internal {
+    function buyCallOption(uint256 _strikeID, uint256 _amount) internal {
         vm.startPrank(address(userAccount));
         usdc.approve(address(ethOptionMarket), type(uint).max);
         OptionMarket.TradeInputParameters memory params = OptionMarket.TradeInputParameters({
-            strikeId: strikeID,
+            strikeId: _strikeID,
             positionId: 0,
             optionType: OptionMarket.OptionType.LONG_CALL,
-            amount: optionsAmount,
+            amount: _amount,
             setCollateralTo: 0,
             iterations: 1,
             minTotalCost: 0,

@@ -2,10 +2,12 @@
 
 ### Installation
 ```bash
+$ git clone https://github.com/voith/lyra-hedge-call.git
+$ cd lyra-hedge-call
+$ git submodule update --init --recursive
 $ yarn
 $ curl -L https://foundry.paradigm.xyz | bash
 $ foundryup
-$ git submodule update --init --recursive
 ```
 
 ### Testing
@@ -105,8 +107,11 @@ Here's an [example](https://github.com/voith/lyra-hedge-call/blob/f873497d985505
    - A user that buys multiple strikes through `buyHedgedCall` will have only one net perps position on SNX.
    - Whenever the call delta changes for any strike then the perps position should be recalculated for all the active strikes.
    - For this reason, we need to calculate the net call delta for all the active strikes. 
-     This is not efficient as the code iterates through a loop and it can run out of gas if there are too many open positions.
-   - Also, the contract doesn't maintain a list of active positions as a position could get liquidated. Instead the `getOwnerPositions` function is used to fetch the current active positions.
+     This is not efficient as the code iterates through a loop, and it can run out of gas if there are too many open positions.
+   - Also, the contract doesn't maintain a list of active positions as a position could get liquidated. Instead, the `getOwnerPositions` function is used to fetch the current active positions.
+   - A simple fix could be to limit the number of positions that a user can open. This will ensure that the reHedge function doesn't run out of gas.
+4. <ins>Tokens stuck in the account contract</ins>: It might seem like the option tokens and the perps are stuck forever inside the Account contract. 
+    However, since the contracts are upgradeable, a new implementation can be added that has logic for closing the open positions and for transferring the PnL.
 
 ### Contracts
 - [Account](docs/src/contracts/Account.sol/contract.Account.md)
