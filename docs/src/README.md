@@ -109,14 +109,26 @@ Here's an [example](https://github.com/voith/lyra-hedge-call/blob/f873497d985505
    - Also, the contract doesn't maintain a list of active positions as a position could get liquidated. Instead the `getOwnerPositions` function is used to fetch the current active positions.
 
 ### Contracts
-- [Account](docs/src/contracts/Account.sol/contract.Account.md)
-- [AccountFactory](docs/src/contracts/AccountFactory.sol/contract.AccountFactory.md)
-- [AccountProxy](docs/src/contracts/AccountProxy.sol/contract.AccountProxy.md)
-- [LyraOptionsAdapter](docs/src/contracts/LyraOptionsAdapter.sol/contract.LyraOptionsAdapter.md)
-- [LyraSNXHedgeStrategy](docs/src/contracts/LyraSNXHedgeStrategy.sol/contract.LyraSNXHedgeStrategy.md)
-- [SynthetixPerpsAdapter](docs/src/contracts/SynthetixPerpsAdapter.sol/abstract.SynthetixPerpsAdapter.md)
 
-To read the contract documentation through browser, run: 
-```bash
-$ forge doc --serve
-```
+- **AccountFactory**
+
+   the factory acts as a beacon for the proxy `AccountProxy.sol` contract.
+   
+   **functions**
+   
+   - `newAccount()`
+      - create unique account proxy for function caller.
+      - returns address of account created.
+   - `getOwnerAccountAddress(address _owner)`
+      - param `_owner`: address of the owner
+      - returns address of the `AccountProxy` owned by `_owner`.
+
+- **Account**
+
+    Account that allows users to buy on-chain derivatives and has hedging capabilities
+    
+    **functions**
+    
+    - `buyHedgedCall(uint256 strikeId, uint256 amount)`
+        - buys a call for a given strikeId and amount and the hedges the delta of the option by selling perps on snx.
+        - 

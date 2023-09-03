@@ -82,7 +82,7 @@ contract AccountFactory is UpgradeableBeacon {
 
     /// @param _owner: address of the owner
     /// @return address of the Account owned by _owner
-    function getAccountAddress(address _owner) external view returns (address) {
+    function getOwnerAccountAddress(address _owner) external view returns (address) {
         return accounts[_owner];
     }
 }

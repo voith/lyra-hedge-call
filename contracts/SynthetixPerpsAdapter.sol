@@ -16,6 +16,7 @@ import {Math} from "@lyrafinance/protocol/contracts/libraries/Math.sol";
 /// @title Synthetix Perpetual Futures Adapter
 /// @author Voith
 /// @notice contracts that helps with buying perps on synthetix and helps maintain healthy margins for positions
+/// @dev credits: This contract is inspired by Lyra's `SNXPerpsV2PoolHedger` contract. (https://github.com/lyra-finance/lyra-protocol/blob/master/contracts/SNXPerpsV2PoolHedger.sol)
 abstract contract SynthetixPerpsAdapter {
     using DecimalMath for uint256;
     using SignedDecimalMath for int256;

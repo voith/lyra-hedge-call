@@ -8,6 +8,7 @@ import "./LyraSNXHedgeStrategy.sol";
 /// @title Account Implementation with Hedging Capabilities
 /// @author Voith
 /// @notice account that allows users to buy on-chain derivatives and has hedging capabilities
+/// @dev credits: This contract is inspired by kwenta's smart margin account. (https://github.com/Kwenta/smart-margin/blob/main/src/Account.sol)
 contract Account is Initializable, LyraSNXHedgeStrategy, Ownable {
     /// @notice thrown when ETH transferred from the account fails.
     error EthWithdrawalFailed();

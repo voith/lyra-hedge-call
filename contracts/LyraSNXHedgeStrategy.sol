@@ -14,7 +14,7 @@ import "forge-std/console.sol";
 import {SynthetixPerpsAdapter} from "./SynthetixPerpsAdapter.sol";
 import {LyraOptionsAdapter} from "./LyraOptionsAdapter.sol";
 
-/// @title Lyra Snx Hedger
+/// @title Lyra SNX Hedge Strategy
 /// @author Voith
 /// @notice buys options on lyra and hedges the call delta by shorting perps on snx.
 contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
@@ -76,6 +76,8 @@ contract LyraSNXHedgeStrategy is LyraOptionsAdapter, SynthetixPerpsAdapter {
     /// @dev calculates the net call delta for all the open option positions
     function _expectedSizeDelta() internal view returns (int256) {
         int256 _totalSizeDelta = 0;
+        // It seems like Lyra only maintains active positions. Positions in any other state are burnt.
+        // So there's no need to check if the position is active.
         OptionToken.OptionPosition[] memory optionTokens = optionToken.getOwnerPositions(address(this));
         uint256 numberOfOptions = optionTokens.length;
         for (uint i = 0; i < numberOfOptions; i++) {
