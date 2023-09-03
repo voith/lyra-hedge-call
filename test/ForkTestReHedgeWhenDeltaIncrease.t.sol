@@ -64,7 +64,7 @@ contract ForkTestReHedgeWhenDeltaIncrease is BaseHedgingTestHelper {
         // check that the leverage for perps on snx is in the ballpark range.
         // It might not be exact because of the time difference between submitting and executing order
         uint256 currentLeverage = uint256(userAccount.currentLeverage() * int(-1));
-        assertApproxEqAbs(targetLeverage / 10 ** 16, currentLeverage / 10 ** 16, 2);
+        assertApproxEqAbs(targetLeverage / 1e16, currentLeverage / 1e16, 2);
     }
 
     function testReHedgewhenDeltaIncrease() external {
@@ -101,6 +101,6 @@ contract ForkTestReHedgeWhenDeltaIncrease is BaseHedgingTestHelper {
         // check that the leverage for perps on snx is in the ballpark range.
         // It might not be exact because of the time difference between submitting and executing order
         uint256 currentLeverage = uint256(userAccount.currentLeverage() * int(-1));
-        assertApproxEqAbs(targetLeverage / 10 ** 16, currentLeverage / 10 ** 16, 2);
+        assertApproxEqAbs(targetLeverage / 1e16, currentLeverage / 1e16, 2);
     }
 }

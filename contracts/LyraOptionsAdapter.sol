@@ -11,7 +11,7 @@ import {DecimalMath} from "@lyrafinance/protocol/contracts/synthetix/DecimalMath
 
 /// @title Lyra Options Adapter
 /// @author Voith
-/// @notice contains logic for buying a call option and calculate its delta.
+/// @notice contains logic for buying a call option and also for calculating its delta.
 contract LyraOptionsAdapter {
     using DecimalMath for uint;
 

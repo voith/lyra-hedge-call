@@ -1,5 +1,5 @@
 # LyraSNXHedgeStrategy
-[Git Source](https://github.com/voith/lyra-hedge-call/blob/f873497d985505e623005b128f0ef7e378dfeab4/contracts/LyraSNXHedgeStrategy.sol)
+[Git Source](https://github.com/voith/lyra-hedge-call/blob/6d8d03993f954009976ed0c983a934150d408004/contracts/LyraSNXHedgeStrategy.sol)
 
 **Inherits:**
 [LyraOptionsAdapter](/contracts/LyraOptionsAdapter.sol/contract.LyraOptionsAdapter.md), [SynthetixPerpsAdapter](/contracts/SynthetixPerpsAdapter.sol/abstract.SynthetixPerpsAdapter.md)

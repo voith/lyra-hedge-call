@@ -1,10 +1,10 @@
 # LyraOptionsAdapter
-[Git Source](https://github.com/voith/lyra-hedge-call/blob/f873497d985505e623005b128f0ef7e378dfeab4/contracts/LyraOptionsAdapter.sol)
+[Git Source](https://github.com/voith/lyra-hedge-call/blob/6d8d03993f954009976ed0c983a934150d408004/contracts/LyraOptionsAdapter.sol)
 
 **Author:**
 Voith
 
-contains logic for buying a call option and calculate its delta.
+contains logic for buying a call option and also for calculating its delta.
 
 
 ## State Variables

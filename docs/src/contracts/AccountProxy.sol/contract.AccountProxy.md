@@ -1,5 +1,5 @@
 # AccountProxy
-[Git Source](https://github.com/voith/lyra-hedge-call/blob/f873497d985505e623005b128f0ef7e378dfeab4/contracts/AccountProxy.sol)
+[Git Source](https://github.com/voith/lyra-hedge-call/blob/6d8d03993f954009976ed0c983a934150d408004/contracts/AccountProxy.sol)
 
 **Inherits:**
 BeaconProxy
